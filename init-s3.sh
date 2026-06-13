@@ -6,6 +6,9 @@ set -e
 # Configurações padrão
 DEFAULT_KEY_NAME="minha-chave"
 DEFAULT_BUCKET_NAME="meu-bucket"
+DEFAULT_ZONE="sa-east-1a"
+DEFAULT_CAPACITY="10G"
+DEFAULT_REGION="sa-east-1"
 
 # Cores para o terminal
 GREEN='\033[0;32m'
@@ -23,7 +26,38 @@ if ! docker compose ps --format json | grep -q '"State":"running"'; then
     exit 1
 fi
 
-# 2. Ler parâmetros ou usar padrões
+# 2. Configurar e aplicar o layout do cluster caso não esteja pronto
+UNASSIGNED_NODES=$(docker compose exec -T garage /garage status | grep "NO ROLE ASSIGNED" || true)
+
+if [ -n "$UNASSIGNED_NODES" ]; then
+    echo -e "${YELLOW}Aviso: Detectados nós do Garage sem papel atribuído (Layout não configurado).${NC}"
+    echo -e "${BLUE}Inicializando a configuração de layout automaticamente...${NC}"
+    
+    # Obter a versão atual do layout
+    CURRENT_VERSION=$(docker compose exec -T garage /garage layout show | grep "Current cluster layout version:" | awk '{print $NF}' || echo "0")
+    if [ -z "$CURRENT_VERSION" ]; then
+        CURRENT_VERSION=0
+    fi
+    NEXT_VERSION=$((CURRENT_VERSION + 1))
+    
+    # Atribuir papel para cada nó não configurado
+    while read -r line; do
+        if [ -n "$line" ]; then
+            NODE_ID=$(echo "$line" | awk '{print $1}')
+            if [ -n "$NODE_ID" ]; then
+                echo -e "Atribuindo capacidade de ${DEFAULT_CAPACITY} na zona '${DEFAULT_ZONE}' para o nó: ${YELLOW}${NODE_ID}${NC}"
+                docker compose exec -T garage /garage layout assign "$NODE_ID" -z "$DEFAULT_ZONE" -c "$DEFAULT_CAPACITY" > /dev/null
+            fi
+        fi
+    done <<< "$UNASSIGNED_NODES"
+    
+    # Aplicar o layout
+    echo -e "Aplicando layout versão ${NEXT_VERSION}..."
+    docker compose exec -T garage /garage layout apply --version "$NEXT_VERSION" > /dev/null
+    echo -e "${GREEN}✔ Layout do cluster inicializado e aplicado!${NC}\n"
+fi
+
+# 3. Ler parâmetros ou usar padrões
 KEY_NAME="${1:-$DEFAULT_KEY_NAME}"
 BUCKET_NAME="${2:-$DEFAULT_BUCKET_NAME}"
 
@@ -67,7 +101,7 @@ echo -e "  Access Key ID:  ${GREEN}${ACCESS_KEY}${NC}"
 echo -e "  Secret Key:     ${GREEN}${SECRET_KEY}${NC}"
 echo -e "  Bucket Name:    ${GREEN}${BUCKET_NAME}${NC}"
 echo -e "  Endpoint URL:   ${YELLOW}http://localhost:3900${NC}"
-echo -e "  Region:         ${YELLOW}garage${NC}"
+echo -e "  Region:         ${YELLOW}${DEFAULT_REGION}${NC}"
 echo -e "${BLUE}=====================================${NC}"
 
 # Salvar no arquivo local para facilitar a importação
@@ -77,7 +111,7 @@ cat <<EOF > "$ENV_S3_FILE"
 AWS_ACCESS_KEY_ID=${ACCESS_KEY}
 AWS_SECRET_ACCESS_KEY=${SECRET_KEY}
 AWS_ENDPOINT_URL=http://localhost:3900
-AWS_DEFAULT_REGION=garage
+AWS_DEFAULT_REGION=${DEFAULT_REGION}
 S3_BUCKET_NAME=${BUCKET_NAME}
 EOF
 
