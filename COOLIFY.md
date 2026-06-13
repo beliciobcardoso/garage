@@ -125,7 +125,29 @@ Depois que o container estiver rodando (estado `Running` verde):
    ```
 
 ### Criando sua Chave S3 e seu Bucket
-Ainda na aba **Terminal** do Coolify:
+
+Uma vez que o cluster está configurado e saudável no Coolify, você tem duas opções para gerar suas credenciais e buckets:
+
+#### Opção A: Execução Automática e Independente (Recomendado)
+Você pode usar o script `init-s3-coolify.sh` diretamente no servidor (VPS) onde o Coolify está rodando. Este script **não depende** do diretório do docker-compose e pode ser executado em qualquer pasta (por exemplo, na pasta do código-fonte da sua aplicação cliente). Ele detectará o container ativo do Garage, gerará as credenciais, criará o bucket e salvará tudo localmente em um arquivo `.env.s3`.
+
+1. Copie o script `init-s3-coolify.sh` para a pasta de sua preferência no servidor.
+2. Dê permissão de execução (se necessário):
+   ```bash
+   chmod +x init-s3-coolify.sh
+   ```
+3. Descubra o nome do seu container do Garage rodando no Coolify:
+   ```bash
+   docker ps --filter "status=running" --filter "name=garage" --format "{{.Names}}" | head -n 1
+   ```
+4. Execute o script passando o nome da chave, do bucket e o nome do container obtido:
+   ```bash
+   ./init-s3-coolify.sh minha-chave meu-bucket nome-do-container-no-coolify
+   ```
+   *(Nota: O script tenta autodetectar o nome do container do Garage caso você não o especifique).*
+
+#### Opção B: Criação Manual
+Ainda na aba **Terminal** do container no Coolify:
 
 1. Gere uma chave API S3:
    ```bash
@@ -141,4 +163,7 @@ Ainda na aba **Terminal** do Coolify:
    /garage bucket allow meu-bucket --key minha-chave --read --write
    ```
 
-Pronto! Sua aplicação poderá se conectar ao Garage S3 em produção usando a URL `https://s3.seudominio.com`, fornecendo a chave e o bucket configurados.
+---
+
+Pronto! Sua aplicação poderá se conectar ao Garage S3 em produção usando a URL pública configurada (ex: `https://s3.seudominio.com`), fornecendo a chave e o bucket correspondentes.
+

@@ -14,9 +14,11 @@ Este é um projeto local e de nó único do **Garage S3** rodando em Docker Comp
 *   **Parar e limpar volumes:** `docker compose down -v`
 *   **Ver status dos containers:** `docker compose ps`
 *   **Visualizar logs do Garage:** `docker compose logs -f`
-*   **Inicializar S3 automaticamente (Chave e Bucket):** `./init-s3.sh <nome-da-chave> <nome-do-bucket>`
-    *   *Exemplo:* `./init-s3.sh app-key app-bucket`
-    *   *Nota:* O script gera/atualiza o arquivo `.env.s3` na raiz.
+*   **Inicializar S3 localmente (via docker-compose.yml):** `./init-s3.sh <nome-da-chave> <nome-do-bucket>`
+    *   *Nota:* Executado no mesmo diretório do arquivo `docker-compose.yml`.
+*   **Inicializar S3 de forma independente (Produção/Coolify):** `./init-s3-coolify.sh <nome-da-chave> <nome-do-bucket> [nome-do-container]`
+    *   *Nota:* Pode ser executado de qualquer diretório da máquina/VPS, autodetecta o container Docker e gera o arquivo `.env.s3` localmente.
+
 
 ---
 

@@ -50,6 +50,20 @@ Exemplo:
 
 O script criará os recursos, exibirá as chaves de acesso no terminal e as salvará em um arquivo `.env.s3` para facilitar o uso na sua aplicação.
 
+> [!TIP]
+> **Execução Independente de Pasta (Coolify / Produção)**:
+> Se o Garage já estiver rodando e saudável (localmente ou no Coolify) e você desejar rodar o script utilitário em **qualquer pasta de sua preferência** (sem precisar do arquivo `docker-compose.yml` naquele diretório), utilize o script **`init-s3-coolify.sh`**.
+>
+> Para descobrir facilmente o nome do container do Garage rodando no seu host, você pode executar:
+> ```bash
+> docker ps --filter "status=running" --filter "name=garage" --format "{{.Names}}" | head -n 1
+> ```
+> Depois, execute o script passando as variáveis desejadas e o nome do container (caso a autodetecção automática falhe):
+> ```bash
+> ./init-s3-coolify.sh [nome_da_chave] [nome_do_bucket] [nome_do_container_se_necessario]
+> ```
+> Ele autodetecta o container do Garage no Docker do host e grava o `.env.s3` localmente na pasta atual de execução.
+
 ---
 
 ## Inicialização Manual (Alternativa)
