@@ -1,0 +1,21 @@
+services:
+  garage:
+    image: dxflrs/garage:v2.3.0
+    container_name: garage
+    restart: unless-stopped
+    ports:
+      - "3900:3900" # S3 API
+      - "3902:3902" # S3 Web
+      - "3903:3903" # Admin API
+    volumes:
+      - ./garage.toml:/etc/garage.toml:ro
+      - garage-meta:/var/lib/garage/meta
+      - garage-data:/var/lib/garage/data
+    environment:
+      - RUST_LOG=info
+      - GARAGE_RPC_SECRET=${GARAGE_RPC_SECRET}
+      - GARAGE_ADMIN_TOKEN=${GARAGE_ADMIN_TOKEN}
+
+volumes:
+  garage-meta:
+  garage-data:
