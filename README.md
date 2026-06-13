@@ -89,16 +89,42 @@ docker compose exec garage garage bucket allow meu-bucket --key minha-chave
 Como o Garage S3 está rodando localmente, configure o seu cliente (ex: AWS CLI, MinIO Client `mc`, Rclone ou SDKs da sua aplicação) utilizando os seguintes parâmetros:
 
 - **Endpoint URL**: `http://localhost:3900`
-- **Region**: `garage`
+- **Region**: `sa-east-1`
 - **Access Key**: *(O Key ID gerado no passo 1)*
 - **Secret Key**: *(O Secret Key gerado no passo 1)*
 
+> [!IMPORTANT]
+> **Compatibilidade de Região**: A região configurada no cliente S3 (ou informada no `DEFAULT_REGION` do script `init-s3.sh`) **deve ser idêntica** ao valor de `s3_region` definido no arquivo `garage.toml`.
+> Caso contrário, a assinatura das requisições falhará e o cliente receberá o erro `AuthorizationHeaderMalformed`.
+
 ### Exemplo com AWS CLI
 
-Para listar os buckets usando a AWS CLI:
+Antes de executar comandos com o `aws-cli`, você precisa carregar as credenciais geradas. Você pode fazer isso de duas formas:
+
+#### Opção A: Carregar temporariamente na sessão do terminal (Recomendado)
+Execute o seguinte comando para exportar as credenciais do arquivo `.env.s3` na sessão atual do seu terminal:
+
+```bash
+export $(grep -v '^#' .env.s3 | xargs)
+```
+
+*(Se você executar o comando em outra pasta, forneça o caminho relativo ou absoluto para o arquivo `.env.s3`).*
+
+#### Opção B: Configurar globalmente no AWS CLI
+Você pode registrar as credenciais no AWS CLI executando o assistente de configuração:
+
+```bash
+aws configure
+```
+E inserindo os dados gerados (que constam no arquivo `.env.s3`):
+- **AWS Access Key ID**: `GK...` (O Key ID gerado)
+- **AWS Secret Access Key**: `...` (O Secret Key gerado)
+- **Default region name**: `sa-east-1` (Deve ser igual ao configurado no `garage.toml`)
+- **Default output format**: `json`
+
+#### Testar a Conexão
+Após carregar ou configurar as credenciais, liste os buckets no Garage local para verificar o funcionamento:
 
 ```bash
 aws --endpoint-url http://localhost:3900 s3 ls
 ```
-
-*(Lembre-se de configurar as credenciais no seu ambiente antes de rodar o comando).*

@@ -11,11 +11,18 @@ services:
       - ./garage.toml:/etc/garage.toml:ro
       - garage-meta:/var/lib/garage/meta
       - garage-data:/var/lib/garage/data
+      - garage-snapshots:/var/lib/garage/snapshots
     environment:
       - RUST_LOG=info
       - GARAGE_RPC_SECRET=${GARAGE_RPC_SECRET}
       - GARAGE_ADMIN_TOKEN=${GARAGE_ADMIN_TOKEN}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   garage-meta:
   garage-data:
+  garage-snapshots:

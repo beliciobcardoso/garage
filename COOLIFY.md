@@ -31,6 +31,7 @@ services:
       - ./garage.toml:/etc/garage.toml:ro
       - garage-meta:/var/lib/garage/meta
       - garage-data:/var/lib/garage/data
+      - garage-snapshots:/var/lib/garage/snapshots
     environment:
       - RUST_LOG=info
       - GARAGE_RPC_SECRET=${GARAGE_RPC_SECRET}
@@ -53,6 +54,9 @@ https://s3.seudominio.com:3900, https://web.seudominio.com:3902, https://admin.s
 > [!IMPORTANT]
 > O Coolify gerará certificados SSL automáticos da Let's Encrypt para todos os domínios configurados com `https://`.
 
+> [!CAUTION]
+> **Segurança da API de Administração**: Mapear `https://admin.seudominio.com:3903` expõe a porta de administração do Garage à internet. Embora ela esteja protegida pelo `GARAGE_ADMIN_TOKEN`, a recomendação de segurança padrão é **não expô-la publicamente**. Prefira gerenciar o cluster usando a aba **Terminal** interna do painel do Coolify ou através de uma rede privada/VPN (ex: WireGuard).
+
 ### Passo 4: Configurar as Variáveis de Ambiente
 Na aba **Environment Variables** (Variáveis de Ambiente) no Coolify, adicione os valores confidenciais copiados do seu arquivo `.env`:
 
@@ -70,13 +74,15 @@ Para mapear o arquivo de configuração `./garage.toml` no Coolify:
 ```toml
 metadata_dir = "/var/lib/garage/meta"
 data_dir = "/var/lib/garage/data"
+metadata_snapshots_dir = "/var/lib/garage/snapshots"
+metadata_auto_snapshot_interval = "6h"
 db_engine = "sqlite"
 replication_factor = 1
 
 rpc_bind_addr = "[::]:3901"
 
 [s3_api]
-s3_region = "garage"
+s3_region = "sa-east-1"
 api_bind_addr = "[::]:3900"
 root_domain = "localhost"
 
