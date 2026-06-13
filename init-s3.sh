@@ -104,8 +104,35 @@ else
 fi
 
 # 5. Associar a chave ao bucket
-echo -e "${BLUE}[3/3] Vinculando permissões de leitura/escrita...${NC}"
-$DOCKER_COMPOSE_CMD exec -T garage /garage bucket allow "$BUCKET_NAME" --key "$ACCESS_KEY" --read --write > /dev/null
+echo -e "${BLUE}[3/3] Vinculando permissões de leitura/escrita e owner...${NC}"
+$DOCKER_COMPOSE_CMD exec -T garage /garage bucket allow "$BUCKET_NAME" --key "$ACCESS_KEY" --read --write --owner > /dev/null
+
+# Tentar aplicar regra de CORS padrão no bucket via AWS CLI se disponível
+if command -v aws >/dev/null 2>&1; then
+    echo -e "${BLUE}Configurando regras de CORS no bucket via AWS CLI...${NC}"
+    CORS_TMP=$(mktemp)
+    cat <<EOF > "$CORS_TMP"
+{
+  "CORSRules": [
+    {
+      "AllowedHeaders": ["*"],
+      "AllowedMethods": ["GET", "PUT", "POST", "DELETE", "HEAD"],
+      "AllowedOrigins": ["*"],
+      "ExposeHeaders": ["ETag"],
+      "MaxAgeSeconds": 3600
+    }
+  ]
+}
+EOF
+    if AWS_ACCESS_KEY_ID="${ACCESS_KEY}" AWS_SECRET_ACCESS_KEY="${SECRET_KEY}" AWS_DEFAULT_REGION="${DEFAULT_REGION}" aws --endpoint-url http://localhost:3900 s3api put-bucket-cors --bucket "$BUCKET_NAME" --cors-configuration "file://$CORS_TMP" >/dev/null 2>&1; then
+        echo -e "${GREEN}✔ CORS configurado para aceitar todas as origens (*)!${NC}"
+    else
+        echo -e "${YELLOW}Aviso: Não foi possível aplicar a regra de CORS via AWS CLI.${NC}"
+    fi
+    rm -f "$CORS_TMP"
+else
+    echo -e "${YELLOW}Nota: 'aws-cli' não encontrado no host. Lembre-se de configurar o CORS na aplicação ou via proxy reverso.${NC}"
+fi
 
 # 6. Exibir resultado
 echo -e "\n${GREEN}✔ Configuração concluída com sucesso!${NC}\n"

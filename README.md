@@ -90,10 +90,10 @@ docker compose exec garage garage bucket create meu-bucket
 
 ### 3. Associar a Chave ao Bucket
 
-Permita que a chave criada tenha acesso de leitura e escrita no bucket:
+Permita que a chave criada tenha acesso completo de leitura, escrita e administração (owner) no bucket:
 
 ```bash
-docker compose exec garage garage bucket allow meu-bucket --key minha-chave
+docker compose exec garage garage bucket allow meu-bucket --key minha-chave --read --write --owner
 ```
 
 ---

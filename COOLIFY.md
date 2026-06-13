@@ -158,9 +158,9 @@ Ainda na aba **Terminal** do container no Coolify:
    ```bash
    /garage bucket create meu-bucket
    ```
-3. Permita que a chave criada acesse o bucket:
+3. Permita que a chave criada acesse o bucket com permissões completas (incluindo owner):
    ```bash
-   /garage bucket allow meu-bucket --key minha-chave --read --write
+   /garage bucket allow meu-bucket --key minha-chave --read --write --owner
    ```
 
 ---

@@ -8,7 +8,11 @@ Este documento fornece instruções técnicas para assistentes de IA (Claude, GP
 
 Este é um projeto local e de nó único do **Garage S3** rodando em Docker Compose. Ele escuta na porta `3900` para a API S3 e na porta `3903` para administração.
 
-### Comandos de Infraestrutura (Execute prefixando com `rtk` se aplicável):
+### Regra Obrigatória: SEMPRE use `rtk` prefix
+
+**Todo comando bash deve ser prefixado com `rtk`.** O RTK é seguro para qualquer comando — se não tem filtro específico, ele faz pass-through. Sem exceção.
+
+### Comandos de Infraestrutura (Execute prefixando com `rtk`):
 *   **Iniciar infraestrutura:** `docker compose up -d`
 *   **Parar infraestrutura:** `docker compose down`
 *   **Parar e limpar volumes:** `docker compose down -v`
@@ -156,9 +160,41 @@ $s3Client = new S3Client([
 
 ---
 
-## 5. Resolução de Problemas Comuns (Troubleshooting)
+## 5. Configuração de CORS no Bucket (CORS Setup)
+
+Se a sua aplicação web fizer uploads diretos a partir do navegador para o Garage S3 (ex: via Presigned URLs), você enfrentará problemas de CORS. O Garage não possui configuração de CORS global no `garage.toml`, mas suporta a API de CORS S3 padrão por bucket.
+
+Você pode solucionar isso de três formas:
+
+### Opção 1: Automática (via script de bootstrap)
+Os scripts `./init-s3.sh` e `./init-s3-coolify.sh` tentarão automaticamente aplicar uma regra de CORS aberta (`*`) no bucket recém-criado caso o `aws-cli` esteja instalado no host/servidor, rodando internamente com as chaves temporárias.
+
+### Opção 2: Via Script Node.js no Projeto Cliente
+Você pode copiar o script `configure-cors.js` para a pasta do seu projeto cliente e executá-lo (requer `@aws-sdk/client-s3` instalado):
+```bash
+# Executar a partir da pasta que contém o seu arquivo .env.s3
+node configure-cors.js
+```
+
+### Opção 3: Injeção no Proxy Reverso (Coolify / Traefik / Caddy)
+Você pode configurar o proxy reverso do Coolify para injetar cabeçalhos de CORS nas requisições. 
+No caso do **Traefik** no Coolify, adicione as seguintes labels no serviço do Garage no seu `docker-compose`:
+```yaml
+labels:
+  - "traefik.http.middlewares.garage-cors.headers.accesscontrolallowmethods=GET,POST,PUT,DELETE,OPTIONS"
+  - "traefik.http.middlewares.garage-cors.headers.accesscontrolalloworiginlist=*"
+  - "traefik.http.middlewares.garage-cors.headers.accesscontrolallowheaders=*"
+  - "traefik.http.middlewares.garage-cors.headers.accesscontrolmaxage=3600"
+  - "traefik.http.routers.garage-router.middlewares=garage-cors"
+```
+
+---
+
+## 6. Resolução de Problemas Comuns (Troubleshooting)
 
 *   **Erro `AuthorizationHeaderMalformed`**: A assinatura da requisição falhou. Verifique se o cliente S3 está usando a região `sa-east-1`. Qualquer outra região causará rejeição pelo Garage.
 *   **Erro `SignatureDoesNotMatch`**: Credenciais incorretas. Verifique se copiou corretamente as chaves do arquivo `.env.s3`.
 *   **Timeout / Host Não Encontrado**: O SDK está tentando acessar via subdomínio (`http://meu-bucket.localhost:3900`). Certifique-se de que a opção de endereçamento por caminho (Path-Style) está ativada.
 *   **Erro de Credenciais Inexistentes**: O AWS CLI ou SDK não encontrou chaves. Certifique-se de exportar as variáveis com `export $(grep -v '^#' .env.s3 | xargs)` no terminal atual antes de rodar os scripts/serviços.
+*   **Bloqueio de CORS**: O navegador recusa requisições para o Garage. Siga as opções de configuração descritas na seção 5 deste documento para liberar o bucket.
+
