@@ -1,0 +1,15 @@
+# Garage S3 Setup & Integration
+
+This project configures a local, single-node instance of Garage S3 using Docker Compose.
+
+## Key Integration Rules for LLMs / AIs
+- **S3 Endpoint:** `http://localhost:3900`
+- **S3 Region:** `sa-east-1` (MUST match the `s3_region` in `garage.toml` exactly)
+- **Path-Style Addressing:** Required. Subdomain-based addressing (`http://bucket.localhost:3900`) is NOT supported. Force path-style in all SDKs (e.g., `forcePathStyle: true` in JS, `addressing_style: 'path'` in Python Boto3).
+- **Credentials:** Automatically generated in `.env.s3` by the `./init-s3.sh` script.
+
+## Main Documentation Files
+- [CLAUDE.md](CLAUDE.md): Detailed AI instructions, environment variables, commands, and code integration templates for Node.js, Python, Go, and PHP.
+- [README.md](README.md): Brazilian Portuguese setup, manual instructions, container commands, and testing using AWS CLI.
+- [COOLIFY.md](COOLIFY.md): Guide for deploying and setting up Garage S3 in Coolify environments.
+- [GARAGE_AI_GUIDE.md](GARAGE_AI_GUIDE.md): Code snippets and technical warnings for AI clients.
