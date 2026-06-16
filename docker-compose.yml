@@ -1,7 +1,7 @@
 services:
   garage:
     image: dxflrs/garage:v2.3.0
-    container_name: garage
+    container_name: garage # no coolifiy prefix to avoid confusion with other services
     restart: unless-stopped
     ports:
       - "3900:3900" # S3 API
@@ -14,6 +14,8 @@ services:
       - garage-snapshots:/var/lib/garage/snapshots
     environment:
       - RUST_LOG=info
+      - SERVICE_FQDN_GARAGE_3900=${SERVICE_FQDN_GARAGE_3900}
+      - SERVICE_FQDN_GARAGE_3902=${SERVICE_FQDN_GARAGE_3902}
       - GARAGE_RPC_SECRET=${GARAGE_RPC_SECRET}
       - GARAGE_ADMIN_TOKEN=${GARAGE_ADMIN_TOKEN}
     logging:
@@ -21,8 +23,22 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    healthcheck:
+      test: ["CMD", "/garage", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - default
+      - coolify
 
-volumes:
+
+volumes: # no coolifiy prefix to avoid confusion with other services
   garage-meta:
   garage-data:
   garage-snapshots:
+
+networks:
+  coolify:
+    external: true

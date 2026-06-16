@@ -34,25 +34,39 @@ services:
       - garage-snapshots:/var/lib/garage/snapshots
     environment:
       - RUST_LOG=info
+      - SERVICE_FQDN_GARAGE_3900=${SERVICE_FQDN_GARAGE_3900}
+      - SERVICE_FQDN_GARAGE_3902=${SERVICE_FQDN_GARAGE_3902}
       - GARAGE_RPC_SECRET=${GARAGE_RPC_SECRET}
       - GARAGE_ADMIN_TOKEN=${GARAGE_ADMIN_TOKEN}
+    healthcheck:
+      test: ["CMD", "/garage", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - default
+      - coolify
+
+networks:
+  coolify:
+    external: true
 ```
 
 > [!NOTE]
-> No Coolify, você não precisa expor as portas fisicamente (como `"3900:3900"`) se for utilizar os domínios reversos. O Coolify (através do Traefik ou Caddy) fará o roteamento de rede interno diretamente para os subdomínios HTTPS.
+> No Coolify v4, ao usar o Compose customizado acima com as variáveis de ambiente mágicas do Coolify (como `SERVICE_FQDN_GARAGE_3900`), o Coolify criará automaticamente campos de domínio visíveis na interface do usuário. O tráfego HTTPS será direcionado automaticamente do domínio público para a porta interna correspondente.
 
 ### Passo 3: Configurar os Domínios (Reverse Proxy)
-Na aba **General** do recurso recém-criado no Coolify:
-1. Localize o campo **Domains** (Domínios).
-2. O Coolify permite mapear múltiplos domínios mapeando-os para diferentes portas internas usando a vírgula (`,`).
-3. Adicione os subdomínios no seguinte formato:
-
-```
-https://s3.seudominio.com:3900, https://web.seudominio.com:3902, https://admin.seudominio.com:3903
-```
+Uma vez que você colou o arquivo Docker Compose e clicou em **Save**:
+1. O Coolify processará o arquivo e detectará as portas expostas pelas variáveis `SERVICE_FQDN_`.
+2. Vá para a aba **Environment Variables** (Variáveis de Ambiente) ou na aba **General** do recurso principal.
+3. Você verá os campos para preencher os domínios mapeados. Defina-os como:
+   * **`SERVICE_FQDN_GARAGE_3900`**: `https://s3.belloinfo.com.br` *(Porta do S3 API)*
+   * **`SERVICE_FQDN_GARAGE_3902`**: `https://web.belloinfo.com.br` *(Porta do S3 Web, opcional para hosting de sites estáticos)*
+4. Clique em **Save** (Salvar).
 
 > [!IMPORTANT]
-> O Coolify gerará certificados SSL automáticos da Let's Encrypt para todos os domínios configurados com `https://`.
+> O Coolify configurará o proxy reverso e gerará certificados SSL gratuitos e automáticos da Let's Encrypt para todos os domínios configurados com `https://`.
 
 > [!CAUTION]
 > **Segurança da API de Administração**: Mapear `https://admin.seudominio.com:3903` expõe a porta de administração do Garage à internet. Embora ela esteja protegida pelo `GARAGE_ADMIN_TOKEN`, a recomendação de segurança padrão é **não expô-la publicamente**. Prefira gerenciar o cluster usando a aba **Terminal** interna do painel do Coolify ou através de uma rede privada/VPN (ex: WireGuard).
